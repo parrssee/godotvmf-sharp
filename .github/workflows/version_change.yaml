@@ -1,0 +1,33 @@
+name: "🗂 Version Change"
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (no 'v' prefix), e.g. 2.2.11+cs.2"
+        required: true
+
+jobs:
+  create_version_pull_request:
+    name: "🗂 Create Version Pull Request"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "🧾 Checkout"
+        uses: actions/checkout@v6
+
+      - name: "📝 Change Version"
+        run: |
+          sed -i 's/version="[^"]*"/version="${{ github.event.inputs.version }}"/' addons/godotvmf/plugin.cfg
+
+      - name: "⤴️ Create Pull Request"
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: version/${{ github.event.inputs.version }}
+          commit-message: >
+            chore(plugin): update version to ${{ github.event.inputs.version }}
+          title: >
+            "chore(plugin): update version to
+            ${{ github.event.inputs.version }}"
+          body: >
+            chore(plugin): update the version to
+            ${{ github.event.inputs.version }}.

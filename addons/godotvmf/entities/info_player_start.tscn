@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://beponjehvu4od"]
+
+[ext_resource type="Script" uid="uid://bb8gee3hjx3f8" path="res://addons/godotvmf/entities/info_player_start.cs" id="1_qsly7"]
+[ext_resource type="PackedScene" uid="uid://gwunh0jnqjjk" path="" id="2_26bgq"]
+
+[node name="info_player_start" type="Node3D"]
+script = ExtResource("1_qsly7")
+player_scene = ExtResource("2_26bgq")

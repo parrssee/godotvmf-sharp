@@ -1,11 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://dqohp4r0iukoo"]
+[gd_scene format=3 uid="uid://dqohp4r0iukoo"]
 
-[ext_resource type="Script" uid="uid://dwh052gh1etuo" path="res://addons/godotvmf/entities/light_spot.gd" id="1_t5d4s"]
+[ext_resource type="Script" uid="uid://dkfymtgkv4bd6" path="res://addons/godotvmf/entities/v_light_spot.cs" id="1_t5d4s"]
 
-[node name="LightSpot" type="Node3D"]
+[node name="LightSpot" type="Node3D" unique_id=725468185]
 rotation_order = 3
 script = ExtResource("1_t5d4s")
 
-[node name="light" type="SpotLight3D" parent="."]
+[node name="light" type="SpotLight3D" parent="." unique_id=197973667]
 light_energy = 0.0
 spot_range = 100.0
