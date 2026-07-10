@@ -86,7 +86,7 @@ public static partial class VMTLoader
         }
         else
         {
-            material = new StandardMaterial3D();
+            material = isBlendTexture ? new WorldVertexTransitionMaterial() : new StandardMaterial3D();
         }
 
         if (material is StandardMaterial3D stdMat)
