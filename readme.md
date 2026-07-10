@@ -77,6 +77,14 @@ Installation and map-side workflow is unchanged from upstream:
 
 The only difference: since every upstream entity is already bundled and ported to C#, there's no separate `GodotVMF-Entities` or `GodotVMF-Project-Template` install step - just install this addon.
 
+### Do not use alongside the original GodotVMF
+This fork and the original [H2xDev/GodotVMF](https://github.com/H2xDev/GodotVMF) both define classes/scripts under the same entity names, so having both installed in the same project at once will cause script collisions (duplicate class names, ambiguous entity resolution, import errors). Use one or the other, not both.
+
+If you're switching an existing project from the original addon to this port (or vice versa):
+1. Remove the addon you're switching away from completely, including its `addons/godotvmf` folder.
+2. Clean Godot's cached import files (the `.godot` folder) before reopening the project, since stale `.import`/cache data referencing the old scripts can cause errors or silently keep using outdated resources.
+3. Re-import your VMF map(s) after switching, to make sure everything is regenerated against the newly installed addon.
+
 ## Known issues
 - Extraction of materials and models from VPKs is not supported
 - Some of imported models may have wrong orientation
