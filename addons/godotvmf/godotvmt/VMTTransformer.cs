@@ -64,12 +64,7 @@ public class VMTTransformer
     }
 
     private static void Basetexture(Material material, Variant value)
-    {
-        if (material.Get("albedo_texture").VariantType != Variant.Type.Nil)
-            material.Set("albedo_texture", Variant.From(VTFLoader.GetTexture(value.AsString())));
-        else if (material is BaseMaterial3D bm)
-            bm.AlbedoTexture = VTFLoader.GetTexture(value.AsString());
-    }
+        => material.Set("albedo_texture", Variant.From(VTFLoader.GetTexture(value.AsString())));
 
     private static void Basetexture2(Material material, Variant value)
         => material.Set("albedo_texture2", Variant.From(VTFLoader.GetTexture(value.AsString())));
