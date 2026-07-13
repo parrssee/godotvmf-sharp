@@ -36,15 +36,33 @@ public class VTFLoader
 
     private static readonly Dictionary<int, Image.Format> FormatMap = new()
     {
-        { 13, Image.Format.Dxt1 },
-        { 14, Image.Format.Dxt3 },
-        { 15, Image.Format.Dxt5 },
+        { (int)ImageFormatEnum.Rgba8888, Image.Format.Rgba8 },
+        { (int)ImageFormatEnum.Bgra8888, Image.Format.Rgba8 },
+        { (int)ImageFormatEnum.Rgb888, Image.Format.Rgb8 },
+        { (int)ImageFormatEnum.Bgr888, Image.Format.Rgb8 },
+        { (int)ImageFormatEnum.I8, Image.Format.L8 },
+        { (int)ImageFormatEnum.Ia88, Image.Format.La8 },
+        { (int)ImageFormatEnum.Dxt1, Image.Format.Dxt1 },
+        { (int)ImageFormatEnum.Dxt3, Image.Format.Dxt3 },
+        { (int)ImageFormatEnum.Dxt5, Image.Format.Dxt5 },
     };
 
-    private static readonly HashSet<int> SupportedFormats = new()
+    private static readonly Dictionary<int, int> BytesPerPixelMap = new()
     {
-        (int)ImageFormatEnum.Dxt1, (int)ImageFormatEnum.Dxt3, (int)ImageFormatEnum.Dxt5
+        { (int)ImageFormatEnum.Rgba8888, 4 },
+        { (int)ImageFormatEnum.Bgra8888, 4 },
+        { (int)ImageFormatEnum.Rgb888, 3 },
+        { (int)ImageFormatEnum.Bgr888, 3 },
+        { (int)ImageFormatEnum.I8, 1 },
+        { (int)ImageFormatEnum.Ia88, 2 },
     };
+
+    private static readonly HashSet<int> BgrSwapFormats = new()
+    {
+        (int)ImageFormatEnum.Bgra8888, (int)ImageFormatEnum.Bgr888
+    };
+
+    private static readonly HashSet<int> SupportedFormats = new(FormatMap.Keys);
 
     private FileAccess? _file;
     private float _frameDuration;
@@ -182,6 +200,8 @@ public class VTFLoader
         if (!FormatMap.TryGetValue(HiresImageFormat, out var format))
             return null;
 
+        bool isUncompressed = BytesPerPixelMap.TryGetValue(HiresImageFormat, out int bytesPerPixel);
+
         int totalFrames = Frames;
         frame = totalFrames - 1 - frame;
 
@@ -189,15 +209,27 @@ public class VTFLoader
         {
             int mipW = Math.Max(1, Width >> i);
             int mipH = Math.Max(1, Height >> i);
-            int multiplier = isDxt1 ? 8 : 16;
-            int mipSize = Math.Max(1, mipW / 4) * Math.Max(1, mipH / 4) * multiplier;
+            int mipSize;
+            if (isUncompressed)
+            {
+                mipSize = mipW * mipH * bytesPerPixel;
+            }
+            else
+            {
+                int multiplier = isDxt1 ? 8 : 16;
+                mipSize = Math.Max(1, mipW / 4) * Math.Max(1, mipH / 4) * multiplier;
+            }
             long fileLen = (long)_file!.GetLength();
             _file!.Seek((ulong)(fileLen - byteRead - mipSize - (long)mipSize * frame));
             dataList.AddRange(_file.GetBuffer(mipSize));
             byteRead += mipSize + (long)mipSize * (totalFrames - 1);
         }
 
-        var img = Image.CreateFromData(Width, Height, useMipmaps, format, dataList.ToArray());
+        var frameData = dataList.ToArray();
+        if (BgrSwapFormats.Contains(HiresImageFormat))
+            SwapBgrChannels(frameData, bytesPerPixel);
+
+        var img = Image.CreateFromData(Width, Height, useMipmaps, format, frameData);
         if (img == null)
         {
             GD.PushError($"Corrupted file: {_file?.GetPath()}");
@@ -213,6 +245,12 @@ public class VTFLoader
         Alpha = (Flags & (uint)(VTFFlags.Onebitalpha | VTFFlags.Eightbitalpha)) != 0;
 
         return ImageTexture.CreateFromImage(img);
+    }
+
+    private static void SwapBgrChannels(byte[] data, int bytesPerPixel)
+    {
+        for (int i = 0; i + 2 < data.Length; i += bytesPerPixel)
+            (data[i], data[i + 2]) = (data[i + 2], data[i]);
     }
 
     public static Texture2D? GetTexture(string texture)

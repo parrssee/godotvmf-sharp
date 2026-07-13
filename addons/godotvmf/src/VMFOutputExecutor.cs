@@ -33,6 +33,8 @@ public partial class VMFOutputExecutor : VMFEntityNode
 
     private void ExecuteTargetInput()
     {
+        if (Caller != null && IsInstanceValid(Caller)) Caller._pendingExecutors.Remove(this);
+
         List<Node> targets;
         if (Target.StartsWith("!"))
         {
