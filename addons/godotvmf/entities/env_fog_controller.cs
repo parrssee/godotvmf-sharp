@@ -45,9 +45,9 @@ public partial class env_fog_controller : VMFEntityNode
         if (existing != null) return existing;
 
         var worldEnvironment = new WorldEnvironment { Name = "WorldEnvironment" };
-
         var vmfNode = GetVmfNode();
-        Node parent = vmfNode is null ? vmfNode : GetTree().Root;
+        
+        Node parent = vmfNode is not null ? vmfNode : GetTree().Root;
         parent.AddChild(worldEnvironment);
         worldEnvironment.Owner = Owner ?? this;
         return worldEnvironment;
