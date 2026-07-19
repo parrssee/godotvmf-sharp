@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Godot;
 
 namespace GodotVMF;
@@ -230,6 +232,11 @@ public class VMTTransformer
         if (material is BaseMaterial3D bm) bm.Metallic = 1.0f;
     }
 
+    // Matches the 3-number bracketed vector syntax (e.g. "[ .2 .2 .2 ]") that VDFParser leaves as a
+    // raw string, since its UvRegex only matches the 4-number+scale UV-transform syntax.
+    private static readonly Regex Bracket3Regex = new(
+        @"\[\s*([-\d\.e]+)\s+([-\d\.e]+)\s+([-\d\.e]+)\s*\]", RegexOptions.Compiled);
+
     private static void Envmaptint(Material material, Variant value)
     {
         if (material is not BaseMaterial3D bm) return;
@@ -237,9 +244,20 @@ public class VMTTransformer
         {
             Variant.Type.Vector3 => (value.AsVector3().X + value.AsVector3().Y + value.AsVector3().Z) / 3f,
             Variant.Type.Color => (value.AsColor().R + value.AsColor().G + value.AsColor().B) / 3f,
+            Variant.Type.String => Bracket3TintMagnitude(value.AsString()),
             _ => 1.0f,
         };
         bm.Metallic = Mathf.Clamp(magnitude, 0f, 1f);
+    }
+
+    private static float Bracket3TintMagnitude(string raw)
+    {
+        var m = Bracket3Regex.Match(raw);
+        if (!m.Success) return 1.0f;
+        float x = float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+        float y = float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+        float z = float.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+        return (x + y + z) / 3f;
     }
 
     private static void Blendmodulatetexture(Material material, Variant value)

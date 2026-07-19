@@ -38,29 +38,4 @@ public partial class env_fog_controller : VMFEntityNode
     {
         if (_environment != null) _environment.FogEnabled = false;
     }
-
-    private WorldEnvironment FindOrCreateWorldEnvironment()
-    {
-        var godotVmfNode = GetVmfNode();
-        Node searchRoot = godotVmfNode is not null ? godotVmfNode : GetTree().Root;
-
-        var existing = FindWorldEnvironment(searchRoot);
-        if (existing != null) return existing;
-
-        var worldEnvironment = new WorldEnvironment { Name = "WorldEnvironment" };
-        searchRoot.AddChild(worldEnvironment);
-        worldEnvironment.Owner = Owner ?? this;
-        return worldEnvironment;
-    }
-
-    private static WorldEnvironment? FindWorldEnvironment(Node node)
-    {
-        if (node is WorldEnvironment we) return we;
-        foreach (var child in node.GetChildren())
-        {
-            var found = FindWorldEnvironment(child);
-            if (found != null) return found;
-        }
-        return null;
-    }
 }

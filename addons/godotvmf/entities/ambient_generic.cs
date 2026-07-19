@@ -69,7 +69,7 @@ public partial class ambient_generic : VMFEntityNode
 
     public async void FadeOut(Variant time = default)
     {
-        if (_soundInstance != null) return;
+        if (_soundInstance == null) return;
 
         float targetVolume = Mathf.LinearToDb(0f);
         var tween = CreateTween();
