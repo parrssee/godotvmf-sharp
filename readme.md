@@ -35,7 +35,7 @@ Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-We
 - Native VMT support
 - Native VTF support (only DXT1, DXT3, DXT5 supported)
 - Displacements import (with vertex data)
-	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.gd)
+	- WorldVertexTransition materials (blend textures) will be imported as [`WorldVertexTransitionMaterial`](/addons/godotvmf/shaders/WorldVertexTransitionMaterial.cs)
 - Entities support (full catalog bundled, see above)
 - Hammer's Input/Output system support
 - Surface props support
@@ -47,6 +47,13 @@ Highly recommended to use [Hammer++](https://ficool2.github.io/HammerPlusPlus-We
 The original GodotVMF is GDScript-first, which is a great fit for pure-GDScript projects but gets awkward once a project's gameplay code lives in C#: every entity hook ends up going through `Call()`/dynamic dispatch across the language boundary. This fork exists to remove that boundary entirely - the importer, the entity base classes and every shipped entity are plain C#, so a C# gameplay project can subclass, extend, and debug them like any other project script.
 
 The behavior is intended to match upstream as closely as possible; divergences are bug fixes found while porting rather than deliberate redesigns.
+
+## Why detach from the GitHub fork network?
+This repo has been detached from GitHub's fork network for [H2xDev/GodotVMF](https://github.com/H2xDev/GodotVMF) and is now a standalone repository.
+- The codebase is fully different (C# vs GDScript) - staying marked as a "fork" implies a shared, diffable commit history with upstream that no longer exists here, which is misleading to anyone comparing the two repos.
+- Fork-network features (the upstream compare view, "N commits ahead/behind", suggested pull requests back to upstream) don't make sense across a full-language rewrite and mostly just produce noise or confusing diffs.
+- A standalone repo gets its own GitHub Insights/traffic stats and isn't subject to fork-network quirks tied to the parent repo (e.g. some visibility/network settings), and reads more clearly to newcomers as its own project rather than "yet another fork".
+- Credit and provenance aren't lost by detaching - they're preserved explicitly in this readme, in the [Credits](#credits) section and the [Why a C# port?](#why-a-c-port) section above, rather than relying on GitHub's fork badge.
 
 ## Versioning
 Version strings follow `<upstream-version>+cs.<port-revision>` (SemVer build metadata), e.g. `2.2.11+cs.1`:

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Godot;
 
 namespace GodotVMF;
@@ -41,6 +43,9 @@ public class VMTTransformer
             { "basetexturetransform",   Basetexturetransform },
             { "basetexturetransform2",  Basetexturetransform2 },
             { "blendmodulatetexture",   Blendmodulatetexture },
+            { "vertexcolor",            Vertexcolor },
+            { "envmap",                 Envmap },
+            { "envmaptint",             Envmaptint },
         };
     }
 
@@ -174,11 +179,27 @@ public class VMTTransformer
 
     private static void Detail(Material material, Variant value)
     {
-        // Intentionally skipped (early return in original GDScript)
+        if (material is not BaseMaterial3D bm) return;
+        bm.DetailEnabled = true;
+        bm.DetailAlbedo = VTFLoader.GetTexture(value.AsString());
     }
 
     private static void Detailblendmode(Material material, Variant value)
-        => material.Set("detail_blend_mode", value);
+    {
+        if (material is BaseMaterial3D bm)
+            bm.DetailBlendMode = MapDetailBlendMode(value.AsInt32());
+        else
+            material.Set("detail_blend_mode", value);
+    }
+
+    // Source's $detailblendmode has ~12 modes; Godot's BlendModeEnum only has 4.
+    // This is a documented approximation, not a 1:1 mapping.
+    private static BaseMaterial3D.BlendModeEnum MapDetailBlendMode(int sourceMode) => sourceMode switch
+    {
+        0 or 8 => BaseMaterial3D.BlendModeEnum.Mul, // DECAL_MODULATE / MULTIPLY
+        1 or 5 or 6 => BaseMaterial3D.BlendModeEnum.Add, // ADDITIVE variants
+        _ => BaseMaterial3D.BlendModeEnum.Mix,
+    };
 
     private static void Surfaceprop(Material material, Variant value)
         => material.SetMeta("surfaceprop", value);
@@ -197,6 +218,46 @@ public class VMTTransformer
         if (t == null) return;
         material.Set("uv1_scale2", new Vector3(t.Value.Scale.X, t.Value.Scale.Y, 1f));
         material.Set("uv1_offset2", new Vector3(t.Value.Translate.X, t.Value.Translate.Y, 0f));
+    }
+
+    private static void Vertexcolor(Material material, Variant value)
+    {
+        if (material is BaseMaterial3D bm) bm.VertexColorUseAsAlbedo = value.AsInt32() == 1;
+    }
+
+    private static void Envmap(Material material, Variant value)
+    {
+        // Approximation: Godot has no reflection-cubemap equivalent to $envmap, so we just
+        // enable PBR reflections via metallic. $envmaptint (if present) scales this down.
+        if (material is BaseMaterial3D bm) bm.Metallic = 1.0f;
+    }
+
+    // Matches the 3-number bracketed vector syntax (e.g. "[ .2 .2 .2 ]") that VDFParser leaves as a
+    // raw string, since its UvRegex only matches the 4-number+scale UV-transform syntax.
+    private static readonly Regex Bracket3Regex = new(
+        @"\[\s*([-\d\.e]+)\s+([-\d\.e]+)\s+([-\d\.e]+)\s*\]", RegexOptions.Compiled);
+
+    private static void Envmaptint(Material material, Variant value)
+    {
+        if (material is not BaseMaterial3D bm) return;
+        float magnitude = value.VariantType switch
+        {
+            Variant.Type.Vector3 => (value.AsVector3().X + value.AsVector3().Y + value.AsVector3().Z) / 3f,
+            Variant.Type.Color => (value.AsColor().R + value.AsColor().G + value.AsColor().B) / 3f,
+            Variant.Type.String => Bracket3TintMagnitude(value.AsString()),
+            _ => 1.0f,
+        };
+        bm.Metallic = Mathf.Clamp(magnitude, 0f, 1f);
+    }
+
+    private static float Bracket3TintMagnitude(string raw)
+    {
+        var m = Bracket3Regex.Match(raw);
+        if (!m.Success) return 1.0f;
+        float x = float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+        float y = float.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+        float z = float.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+        return (x + y + z) / 3f;
     }
 
     private static void Blendmodulatetexture(Material material, Variant value)

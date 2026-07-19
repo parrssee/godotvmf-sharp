@@ -25,6 +25,17 @@ public partial class light_environment : VMFEntityNode
         GlobalRotationDegrees = new Vector3(pitch, GlobalRotationDegrees.Y, GlobalRotationDegrees.Z);
         GlobalRotation = new Vector3(GlobalRotation.X, GlobalRotation.Y - Mathf.Pi / 2f, GlobalRotation.Z);
 
+        if (e.TryGetValue("_ambient", out var av))
+        {
+            var ambientColor = av.As<Color>();
+            var worldEnvironment = FindOrCreateWorldEnvironment();
+            var environment = worldEnvironment.Environment ??= new Environment();
+            environment.AmbientLightSource = Environment.AmbientSource.Color;
+            environment.AmbientLightColor = new Color(ambientColor.R, ambientColor.G, ambientColor.B);
+            environment.AmbientLightEnergy = ambientColor.A;
+            environment.AmbientLightSkyContribution = 0f;
+        }
+
         Name = "light_environment";
         return 0;
     }

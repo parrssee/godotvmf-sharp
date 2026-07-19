@@ -14,6 +14,7 @@ public partial class VMFEntityNode : Node3D
     public static readonly Dictionary<string, Node> Aliases = new();
 
     private readonly Dictionary<string, List<Callable>> _userSignals = new();
+    internal readonly List<VMFOutputExecutor> _pendingExecutors = new();
 
     [Export] public GodotDict Entity { get; set; } = new();
     [Export] public bool Enabled { get; set; } = true;
@@ -41,6 +42,15 @@ public partial class VMFEntityNode : Node3D
     public void Toggle(Variant _param = default) => Enabled = !Enabled;
     public void Enable(Variant _param = default) => Enabled = true;
     public void Disable(Variant _param = default) => Enabled = false;
+
+    public void CancelPending(Variant _param = default)
+    {
+        foreach (var executor in _pendingExecutors)
+        {
+            if (IsInstanceValid(executor)) executor.QueueFree();
+        }
+        _pendingExecutors.Clear();
+    }
 
     public void Kill(Variant _param = default)
     {
@@ -134,6 +144,7 @@ public partial class VMFEntityNode : Node3D
 
         var executor = new VMFOutputExecutor(target, input, param, delay, 1);
         executor.Caller = caller;
+        caller._pendingExecutors.Add(executor);
         GetTree().Root.AddChild(executor);
     }
 
@@ -215,6 +226,31 @@ public partial class VMFEntityNode : Node3D
         {
             if (p is VMFNode vmf) return vmf;
             p = p.GetParent();
+        }
+        return null;
+    }
+
+    protected WorldEnvironment FindOrCreateWorldEnvironment()
+    {
+        var godotVmfNode = GetVmfNode();
+        Node searchRoot = godotVmfNode is not null ? godotVmfNode : GetTree().Root;
+
+        var existing = FindWorldEnvironment(searchRoot);
+        if (existing != null) return existing;
+
+        var worldEnvironment = new WorldEnvironment { Name = "WorldEnvironment" };
+        searchRoot.AddChild(worldEnvironment);
+        worldEnvironment.Owner = Owner ?? this;
+        return worldEnvironment;
+    }
+
+    private static WorldEnvironment? FindWorldEnvironment(Node node)
+    {
+        if (node is WorldEnvironment we) return we;
+        foreach (var child in node.GetChildren())
+        {
+            var found = FindWorldEnvironment(child);
+            if (found != null) return found;
         }
         return null;
     }
